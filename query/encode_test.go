@@ -326,3 +326,24 @@ func TestTagParsing(t *testing.T) {
 		}
 	}
 }
+
+type testTypeWithCustomTag struct {
+	TestValue string `testTag:"testName"`
+}
+
+func TestValuesWithTag(t *testing.T) {
+	testTag := "testTag"
+	expectedFieldName := "testName"
+	expectedFieldValue := "testValue"
+	x := testTypeWithCustomTag{TestValue: expectedFieldValue}
+	urlValues, err := ValuesWithTag(x, testTag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := urlValues[expectedFieldName]; !ok {
+		t.Fatalf("expected field name: %q was not found", expectedFieldName)
+	}
+	if value := urlValues[expectedFieldName]; value[0] != expectedFieldValue {
+		t.Fatalf("expected field value: %q was not found, got: %v", expectedFieldValue, value)
+	}
+}

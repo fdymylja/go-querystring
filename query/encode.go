@@ -34,6 +34,13 @@ var timeType = reflect.TypeOf(time.Time{})
 
 var encoderType = reflect.TypeOf(new(Encoder)).Elem()
 
+var defaultTag = "url"
+
+// SetDefaultTag allows to set a custom tag globally
+func SetDefaultTag(t string) {
+	defaultTag = t
+}
+
 // Encoder is an interface implemented by any type that wishes to encode
 // itself into URL values in a non-standard way.
 type Encoder interface {
@@ -111,6 +118,18 @@ type Encoder interface {
 // Multiple fields that encode to the same URL parameter name will be included
 // as multiple URL values of the same name.
 func Values(v interface{}) (url.Values, error) {
+	return values(v, defaultTag)
+}
+
+// ValuesWithTag converts the v interface into url.Values,  follow Values documentation, the only difference is that it
+// allows you to set a custom tag key to parse field names.
+func ValuesWithTag(v interface{}, tagKey string) (url.Values, error) {
+	return values(v, tagKey)
+}
+
+// values converts the v interface into url.Values following Values documentation, the only difference being it accepts
+// a custom tag to parse field names
+func values(v interface{}, tagKey string) (url.Values, error) {
 	values := make(url.Values)
 	val := reflect.ValueOf(v)
 	for val.Kind() == reflect.Ptr {
@@ -128,14 +147,14 @@ func Values(v interface{}) (url.Values, error) {
 		return nil, fmt.Errorf("query: Values() expects struct input. Got %v", val.Kind())
 	}
 
-	err := reflectValue(values, val, "")
+	err := reflectValue(values, val, "", tagKey)
 	return values, err
 }
 
 // reflectValue populates the values parameter from the struct fields in val.
 // Embedded structs are followed recursively (using the rules defined in the
 // Values function documentation) breadth-first.
-func reflectValue(values url.Values, val reflect.Value, scope string) error {
+func reflectValue(values url.Values, val reflect.Value, scope string, tagKey string) error {
 	var embedded []reflect.Value
 
 	typ := val.Type()
@@ -146,7 +165,7 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 		}
 
 		sv := val.Field(i)
-		tag := sf.Tag.Get("url")
+		tag := sf.Tag.Get(tagKey)
 		if tag == "-" {
 			continue
 		}
@@ -230,7 +249,7 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 		}
 
 		if sv.Kind() == reflect.Struct {
-			reflectValue(values, sv, name)
+			reflectValue(values, sv, name, tagKey)
 			continue
 		}
 
@@ -238,7 +257,7 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 	}
 
 	for _, f := range embedded {
-		if err := reflectValue(values, f, scope); err != nil {
+		if err := reflectValue(values, f, scope, tagKey); err != nil {
 			return err
 		}
 	}
