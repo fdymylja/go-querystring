@@ -121,7 +121,7 @@ func Values(v interface{}) (url.Values, error) {
 	return values(v, defaultTag)
 }
 
-// ValuesWithTag converts the v interface into url.Values,  follow Values documentation, the only difference is that it
+// ValuesWithTag converts the v interface into url.Values,  following Values documentation, the only difference is that it
 // allows you to set a custom tag key to parse field names.
 func ValuesWithTag(v interface{}, tagKey string) (url.Values, error) {
 	return values(v, tagKey)
@@ -249,7 +249,7 @@ func reflectValue(values url.Values, val reflect.Value, scope string, tagKey str
 		}
 
 		if sv.Kind() == reflect.Struct {
-			reflectValue(values, sv, name, tagKey)
+			_ = reflectValue(values, sv, name, tagKey)
 			continue
 		}
 
